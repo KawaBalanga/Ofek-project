@@ -38,7 +38,6 @@ app.get('/images', (req, res) => {
   res.json(dbImages);
 });
 
-// טיפול בתמונה בודדת בכל פעם ליציבות מקסימלית
 app.post('/upload', upload.single('image'), (req, res) => {
   try {
     const tags = req.file.info && req.file.info.categorization ? 
@@ -46,7 +45,8 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
     const newImage = {
       id: (Date.now() + Math.random()).toString(),
-      title: req.body.title || "Untitled",
+      // אם אין כותרת, משתמשים ב-"Untitled"
+      title: req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled",
       filename: req.file.path,
       tags: tags
     };
