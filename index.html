@@ -1,177 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Gallery</title>
-<!-- פונט מודרני מגוגל -->
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Clothing Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --danger: #ff4757;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+        }
 
-<style>
-:root {
-    --primary-color: #4a90e2;
-    --danger-color: #ff4757;
-    --bg-color: #f0f2f5;
-    --card-bg: #ffffff;
-}
+        body {
+            font-family: 'Assistant', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
 
-body {
-    font-family: 'Assistant', sans-serif;
-    background: var(--bg-color);
-    margin: 0;
-    padding: 20px;
-    color: #333;
-}
+        h1 { text-align: center; color: #2d3436; margin-bottom: 30px; }
 
-h1 {
-    text-align: center;
-    font-weight: 600;
-    color: #2d3436;
-    margin-bottom: 30px;
-}
+        .upload-box {
+            max-width: 550px;
+            margin: auto;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
 
-/* Upload box - מראה נקי יותר */
-.upload-box {
-    max-width: 550px;
-    margin: auto;
-    background: var(--card-bg);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-    text-align: center;
-}
+        .drop-area {
+            border: 2px dashed #cbd5e0;
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #718096;
+        }
 
-.drop-area {
-    border: 2px dashed #cbd5e0;
-    padding: 40px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #718096;
-}
+        .drop-area.dragover { background: #edf2f7; border-color: var(--primary); }
 
-.drop-area:hover, .drop-area.dragover {
-    background: #edf2f7;
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-}
+        input[type="text"] {
+            width: 100%; padding: 12px; border: 1px solid #e2e8f0;
+            border-radius: 10px; margin-bottom: 10px; box-sizing: border-box;
+        }
 
-input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
-    outline: none;
-}
+        button {
+            width: 100%; padding: 12px; background: var(--primary);
+            color: white; border: none; border-radius: 10px;
+            font-weight: 600; cursor: pointer;
+        }
 
-button {
-    width: 100%;
-    padding: 12px;
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
+        button:disabled { background: #a0aec0; }
 
-button:disabled {
-    background: #a0aec0;
-    cursor: not-allowed;
-}
+        .filter-container {
+            max-width: 550px; margin: 30px auto; text-align: center;
+            background: white; padding: 15px; border-radius: 15px;
+        }
 
-/* Gallery - כרטיסים משודרגים */
-.gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 25px;
-    margin-top: 40px;
-}
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px; margin-top: 20px;
+        }
 
-.card {
-    background: var(--card-bg);
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease;
-    display: flex;
-    flex-direction: column;
-}
+        .card {
+            background: var(--card); border-radius: 15px;
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: 0.3s; display: flex; flex-direction: column;
+        }
 
-.card:hover {
-    transform: translateY(-8px);
-}
+        .card:hover { transform: translateY(-5px); }
 
-.card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    cursor: pointer;
-}
+        .card img { width: 100%; height: 220px; object-fit: cover; cursor: pointer; }
 
-.card-info {
-    padding: 15px;
-    text-align: left;
-}
+        .card-info { padding: 15px; }
 
-.card-title {
-    margin: 0;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
+        .card-title { margin: 0; font-size: 1.1rem; }
 
-.card-date {
-    font-size: 0.8rem;
-    color: #a0aec0;
-    margin-top: 5px;
-}
+        .card-date { font-size: 0.8rem; color: #a0aec0; margin: 5px 0; }
 
-button.delete {
-    background: none;
-    color: var(--danger-color);
-    font-size: 0.9rem;
-    padding: 5px;
-    margin-top: 10px;
-    width: auto;
-    text-decoration: underline;
-}
+        .ai-tags { font-size: 0.75rem; color: var(--primary); font-weight: 600; }
 
-/* Modal */
-.modal {
-    display: none;
-    position: fixed;
-    background: rgba(0,0,0,0.85);
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    justify-content: center; align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(5px);
-}
+        .delete-btn {
+            background: none; color: var(--danger); width: auto;
+            padding: 0; margin-top: 10px; text-decoration: underline; font-size: 0.85rem;
+        }
 
-.modal img {
-    max-width: 90%;
-    max-height: 80%;
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(0,0,0,0.5);
-}
-</style>
+        .modal {
+            display: none; position: fixed; background: rgba(0,0,0,0.9);
+            top: 0; left: 0; width: 100%; height: 100%;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+
+        .modal img { max-width: 90%; max-height: 80%; border-radius: 10px; }
+    </style>
 </head>
-
 <body>
 
-<h1>My Visual Collection</h1>
+<h1>Clothing Collection AI</h1>
 
 <div class="upload-box">
-    <input type="text" id="title" placeholder="Give your image a title...">
-    <div class="drop-area" id="dropArea">
-        <strong>Drop image here</strong><br>or click to browse
-    </div>
+    <input type="text" id="title" placeholder="Item Name (e.g. Blue Jeans)">
+    <div class="drop-area" id="dropArea">Drag & Drop or Click to Upload</div>
     <input type="file" id="fileInput" hidden>
-    <button id="uploadBtn" onclick="uploadImage()">Upload Image</button>
+    <button id="uploadBtn" onclick="uploadImage()">Upload to Gallery</button>
+</div>
+
+<div class="filter-container">
+    <label>Filter by Category: </label>
+    <select id="categoryFilter" onchange="loadGallery()">
+        <option value="all">All Items</option>
+        <option value="pants">Pants</option>
+        <option value="shirt">Shirts / Tops</option>
+        <option value="shoes">Shoes</option>
+        <option value="dress">Dresses</option>
+    </select>
 </div>
 
 <div class="gallery" id="gallery"></div>
@@ -186,121 +135,79 @@ const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 let selectedFile = null;
 
-// Drag & Drop
 dropArea.onclick = () => fileInput.click();
-
-dropArea.addEventListener('dragover', e => {
-    e.preventDefault();
-    dropArea.classList.add('dragover');
-});
-
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-
-dropArea.addEventListener('drop', e => {
-    e.preventDefault();
-    dropArea.classList.remove('dragover');
-    selectedFile = e.dataTransfer.files[0];
-    dropArea.innerHTML = `<strong>Selected:</strong> ${selectedFile.name}`;
-});
-
-fileInput.addEventListener('change', () => {
+fileInput.onchange = () => {
     selectedFile = fileInput.files[0];
-    dropArea.innerHTML = `<strong>Selected:</strong> ${selectedFile.name}`;
-});
+    dropArea.innerText = selectedFile.name;
+};
 
-// Upload עם אינדיקטור טעינה[cite: 1]
 function uploadImage() {
     const title = document.getElementById('title').value;
-    if (!selectedFile || !title) return alert("Please provide a title and select a file!");
+    if (!selectedFile || !title) return alert("Missing title or file!");
 
-    // עדכון כפתור[cite: 1]
     uploadBtn.disabled = true;
-    uploadBtn.innerText = "Uploading to Cloud...";
+    uploadBtn.innerText = "Analyzing with AI...";
 
     const formData = new FormData();
     formData.append('title', title);
     formData.append('image', selectedFile);
 
-    fetch('/upload', {
-        method: 'POST',
-        body: formData
-    }).then(res => {
+    fetch('/upload', { method: 'POST', body: formData })
+    .then(() => {
         uploadBtn.disabled = false;
-        uploadBtn.innerText = "Upload Image";
-        
-        if (res.ok) {
-            loadGallery();
-            document.getElementById('title').value = '';
-            dropArea.innerHTML = "<strong>Drop image here</strong><br>or click to browse";
-            selectedFile = null;
-        } else {
-            alert("Upload failed. Check server connection.");
-        }
-    }).catch(err => {
-        uploadBtn.disabled = false;
-        uploadBtn.innerText = "Upload Image";
-        alert("Error connecting to server");
+        uploadBtn.innerText = "Upload to Gallery";
+        document.getElementById('title').value = '';
+        dropArea.innerText = "Drag & Drop or Click to Upload";
+        selectedFile = null;
+        loadGallery();
     });
 }
 
-// Load images[cite: 1]
 function loadGallery() {
+    const filter = document.getElementById('categoryFilter').value;
     fetch('/images')
     .then(res => res.json())
     .then(data => {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
 
-        if (!data || data.length === 0) {
-            gallery.innerHTML = "<p style='grid-column: 1/-1; text-align: center;'>Your gallery is empty</p>";
-            return;
-        }
+        const filtered = data.filter(item => 
+            filter === 'all' || (item.tags && item.tags.some(t => t.toLowerCase().includes(filter)))
+        );
 
-        data.forEach(item => {
+        filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
+            
+            const uploadDate = new Date(parseInt(item.id)).toLocaleString();
+            const tagsText = item.tags ? item.tags.slice(0,3).join(', ') : 'Scanning...';
 
-            const img = document.createElement('img');
-            img.src = item.filename; // כתובת מהענן[cite: 1]
-            img.loading = "lazy"; // שיפור ביצועים
-            img.onclick = () => {
-                document.getElementById('modalImg').src = img.src;
-                document.getElementById('modal').style.display = 'flex';
-            };
-
-            const info = document.createElement('div');
-            info.className = 'card-info';
-
-            const title = document.createElement('h3');
-            title.className = 'card-title';
-            title.innerText = item.title;
-
-            // תצוגת תאריך[cite: 1]
-            const date = document.createElement('div');
-            date.className = 'card-date';
-            const uploadDate = item.id ? new Date(parseInt(item.id)) : new Date();
-            date.innerText = `Uploaded: ${uploadDate.toLocaleDateString()} ${uploadDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-
-            const del = document.createElement('button');
-            del.className = 'delete';
-            del.innerText = "Remove";
-            del.onclick = () => {
-                if(confirm("Are you sure you want to delete this image?")) deleteImage(item.id);
-            };
-
-            info.append(title, date, del);
-            card.append(img, info);
+            card.innerHTML = `
+                <img src="${item.filename}" onclick="showModal('${item.filename}')">
+                <div class="card-info">
+                    <h3 class="card-title">${item.title}</h3>
+                    <p class="card-date">Uploaded: ${uploadDate}</p>
+                    <div class="ai-tags">AI: ${tagsText}</div>
+                    <button class="delete-btn" onclick="deleteImg('${item.id}')">Delete</button>
+                </div>
+            `;
             gallery.appendChild(card);
         });
     });
 }
 
-function deleteImage(id) {
-    fetch(`/images/${id}`, { method: 'DELETE' }).then(loadGallery);
+function showModal(src) {
+    document.getElementById('modalImg').src = src;
+    document.getElementById('modal').style.display = 'flex';
+}
+
+function deleteImg(id) {
+    if(confirm("Delete this item?")) {
+        fetch(`/images/${id}`, { method: 'DELETE' }).then(loadGallery);
+    }
 }
 
 loadGallery();
 </script>
-
 </body>
 </html>
