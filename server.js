@@ -10,17 +10,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// הגדרות Cloudinary - וודא שהפרטים שלך כאן
+// הגדרות Cloudinary - החלף בפרטים שלך
 cloudinary.config({
-  cloud_name: process.env.YOUR_CLOUD_NAME,
-  api_key: process.env.YOUR_API_KEY,
-  api_secret: process.env.YOUR_API_SECRET
+  cloud_name: process.env.YOUR_CLOUD_NAME || 'YOUR_NAME',
+  api_key: process.env.YOUR_API_KEY || 'YOUR_KEY',
+  api_secret: process.env.YOUR_API_SECRET || 'YOUR_SECRET'
 });
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // שליפת התגיות שהגיעו מה-FormData
+    // שליפת תגיות מה-body (נשלחו לפני הקובץ ב-FormData)
     const tags = req.body.tags ? req.body.tags.split(',') : [];
     const title = req.body.title || "Unnamed";
     return {
@@ -36,7 +36,7 @@ const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// שליפת תמונות עם מנגנון למניעת Cache
+// שליפת תמונות
 app.get('/images', async (req, res) => {
   try {
     const result = await cloudinary.api.resources({
@@ -45,10 +45,8 @@ app.get('/images', async (req, res) => {
       max_results: 500,
       context: true,
       tags: true,
-      // זה גורם ל-Cloudinary להחזיר מידע עדכני ולא מהזיכרון
-      timestamp: Date.now() 
+      timestamp: Date.now() // מניעת Cache
     });
-    
     const images = result.resources.map(resource => ({
       id: resource.public_id,
       title: (resource.context && resource.context.custom && resource.context.custom.caption) || "Unnamed",
@@ -61,22 +59,23 @@ app.get('/images', async (req, res) => {
   }
 });
 
-// העלאת תמונה
-app.post('/upload', upload.single('image'), (req, res) => {
-  res.json({ success: true });
-});
+app.post('/upload', upload.single('image'), (req, res) => res.json({ success: true }));
 
-// עדכון תגיות - POST בטוח ללא תווים מיוחדים ב-URL
+// עדכון תגיות - מתוקן לפי הלוגים של image_c89bd0.png
 app.post('/update-tags', async (req, res) => {
   try {
     const { publicId, tags } = req.body;
+    if (!publicId) return res.status(400).json({ error: "Missing ID" });
+
     console.log(`Updating tags for: ${publicId}`, tags);
 
-    // מחיקת ישנות והוספת חדשות
-    await cloudinary.uploader.remove_all_tags([publicId]);
-    if (tags && tags.length > 0) {
-      await cloudinary.uploader.add_tags(tags, [publicId]);
+    // התיקון: replace_tag מחליפה את כל התגיות הישנות בחדשות
+    if (!tags || tags.length === 0) {
+      await cloudinary.uploader.remove_all_tags([publicId]);
+    } else {
+      await cloudinary.uploader.replace_tag(tags, [publicId]);
     }
+
     res.json({ success: true });
   } catch (error) {
     console.error("Update error:", error);
@@ -84,7 +83,6 @@ app.post('/update-tags', async (req, res) => {
   }
 });
 
-// מחיקת תמונה
 app.delete('/delete-image', async (req, res) => {
   try {
     const { id } = req.query;
@@ -96,4 +94,4 @@ app.delete('/delete-image', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
