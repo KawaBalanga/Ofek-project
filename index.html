@@ -3,58 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Clothing Gallery Pro</title>
+    <title>AI Clothing Gallery</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #4a90e2; --danger: #ff4757; --bg: #f0f2f5; --card: #ffffff; }
-        body { font-family: 'Assistant', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        h1 { text-align: center; color: #2d3436; margin-bottom: 30px; }
+        body { font-family: 'Assistant', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .upload-box { max-width: 550px; margin: auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-        .drop-area { border: 2px dashed #cbd5e0; padding: 40px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; transition: 0.3s; color: #718096; }
-        .drop-area.dragover { background: #edf2f7; border-color: var(--primary); }
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .drop-area { border: 2px dashed #cbd5e0; padding: 40px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; color: #718096; }
+        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; }
         button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-        button:disabled { background: #a0aec0; cursor: wait; }
-        .filter-container { max-width: 550px; margin: 30px auto; text-align: center; background: white; padding: 15px; border-radius: 15px; }
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; margin-top: 20px; }
-        .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; display: flex; flex-direction: column; }
-        .card img { width: 100%; height: 220px; object-fit: cover; cursor: pointer; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; margin-top: 30px; }
+        .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .card img { width: 100%; height: 220px; object-fit: cover; }
         .card-info { padding: 15px; }
-        .card-title { margin: 0; font-size: 1.1rem; font-weight: 600; }
-        .ai-tags { font-size: 0.8rem; color: var(--primary); font-weight: 600; margin-top: 8px; background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-block; }
-        .delete-btn { background: none; color: var(--danger); width: auto; padding: 0; margin-top: 15px; text-decoration: underline; font-size: 0.85rem; }
-        .modal { display: none; position: fixed; background: rgba(0,0,0,0.9); top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center; z-index: 2000; }
-        .modal img { max-width: 90%; max-height: 80%; border-radius: 10px; }
+        .ai-tags { font-size: 0.8rem; color: var(--primary); font-weight: 600; background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-block; margin-top: 5px; }
+        .delete-btn { color: var(--danger); background: none; border: none; text-decoration: underline; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<h1>Clothing Collection AI</h1>
-
 <div class="upload-box">
     <input type="text" id="title" placeholder="Title (Optional)">
-    <div class="drop-area" id="dropArea">Drag images here or Click to browse</div>
+    <div class="drop-area" id="dropArea">Click to upload images</div>
     <input type="file" id="fileInput" hidden multiple>
-    <button id="uploadBtn" onclick="uploadImage()">Start Uploading</button>
-</div>
-
-<div class="filter-container">
-    <label>Filter by Category: </label>
-    <select id="categoryFilter" onchange="loadGallery()">
-        <option value="all">All Items</option>
-        <option value="pants">Pants</option>
-        <option value="shirt">Shirts / Tops</option>
-        <option value="shoes">Shoes</option>
-        <option value="dress">Dresses</option>
-        <option value="suit">Suits / Jackets</option>
-    </select>
+    <button id="uploadBtn" onclick="uploadImage()">Upload</button>
 </div>
 
 <div class="gallery" id="gallery"></div>
-
-<div class="modal" id="modal" onclick="this.style.display='none'">
-    <img id="modalImg">
-</div>
 
 <script>
 let selectedFiles = [];
@@ -63,79 +38,50 @@ const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 
 dropArea.onclick = () => fileInput.click();
-fileInput.onchange = () => { 
-    selectedFiles = Array.from(fileInput.files); 
-    dropArea.innerText = `${selectedFiles.length} files selected`; 
-};
-
-dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-dropArea.addEventListener('drop', e => {
-    e.preventDefault();
-    dropArea.classList.remove('dragover');
-    selectedFiles = Array.from(e.dataTransfer.files);
-    dropArea.innerText = `${selectedFiles.length} files selected`;
-});
+fileInput.onchange = () => { selectedFiles = Array.from(fileInput.files); dropArea.innerText = `${selectedFiles.length} files selected`; };
 
 async function uploadImage() {
-    const titleInput = document.getElementById('title').value;
-    // עכשיו בודקים רק אם נבחרו קבצים, ה-title לא חובה
-    if (selectedFiles.length === 0) return alert("Please select images first!");
-
+    if (selectedFiles.length === 0) return alert("Select images!");
     uploadBtn.disabled = true;
 
     for (let i = 0; i < selectedFiles.length; i++) {
-        uploadBtn.innerText = `Uploading ${i + 1} of ${selectedFiles.length}...`;
+        uploadBtn.innerText = `Uploading ${i+1}/${selectedFiles.length}...`;
         const formData = new FormData();
-        // שולחים את הכותרת כפי שהיא (השרת יטפל במקרה של ריק)
-        formData.append('title', titleInput);
+        formData.append('title', document.getElementById('title').value);
         formData.append('image', selectedFiles[i]);
-
-        try {
-            const res = await fetch('/upload', { method: 'POST', body: formData });
-            if (!res.ok) throw new Error();
-        } catch (err) {
-            console.error("Upload failed for:", selectedFiles[i].name);
-        }
+        await fetch('/upload', { method: 'POST', body: formData });
     }
 
     uploadBtn.disabled = false;
-    uploadBtn.innerText = "Start Uploading";
-    document.getElementById('title').value = '';
-    dropArea.innerText = "Drag images here or Click to browse";
+    uploadBtn.innerText = "Upload";
     selectedFiles = [];
+    dropArea.innerText = "Click to upload images";
     loadGallery();
 }
 
 function loadGallery() {
-    const filter = document.getElementById('categoryFilter').value;
     fetch('/images').then(res => res.json()).then(data => {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
         
-        const filtered = data.filter(item => 
-            filter === 'all' || (item.tags && item.tags.some(t => t.toLowerCase().includes(filter)))
-        );
-
-        if (filtered.length === 0) {
-            gallery.innerHTML = "<p style='grid-column: 1/-1; text-align: center;'>No items found.</p>";
-            return;
-        }
-
-        filtered.forEach(item => {
+        data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
             
-            const tagsText = (item.tags && Array.isArray(item.tags) && item.tags.length > 0) 
-                             ? item.tags.slice(0, 2).join(', ') 
-                             : 'Clothing';
+            // סינון AI משופר: מדלגים על מילים כלליות
+            const boringWords = ['clothing', 'apparel', 'fashion', 'sleeve', 'textile', 'person', 'wear'];
+            let tagsDisplay = 'Clothing';
+            
+            if (item.tags && item.tags.length > 0) {
+                const specific = item.tags.filter(t => !boringWords.includes(t.toLowerCase())).slice(0, 2);
+                if (specific.length > 0) tagsDisplay = specific.join(', ');
+            }
 
             card.innerHTML = `
-                <img src="${item.filename}" onclick="showModal('${item.filename}')" loading="lazy">
+                <img src="${item.filename}">
                 <div class="card-info">
-                    <h3 class="card-title">${item.title}</h3>
-                    <div class="ai-tags">🏷️ ${tagsText}</div>
-                    <br>
+                    <strong>${item.title}</strong><br>
+                    <div class="ai-tags">🏷️ ${tagsDisplay}</div><br>
                     <button class="delete-btn" onclick="deleteImg('${item.id}')">Remove</button>
                 </div>
             `;
@@ -144,9 +90,7 @@ function loadGallery() {
     });
 }
 
-function showModal(src) { document.getElementById('modalImg').src = src; document.getElementById('modal').style.display = 'flex'; }
-function deleteImg(id) { if(confirm("Remove this item?")) fetch(`/images/${id}`, { method: 'DELETE' }).then(loadGallery); }
-
+function deleteImg(id) { if(confirm("Delete?")) fetch(`/images/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(loadGallery); }
 loadGallery();
 </script>
 </body>
