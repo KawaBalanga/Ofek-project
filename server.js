@@ -16,19 +16,18 @@ cloudinary.config({
   api_secret: process.env.YOUR_API_SECRET
 });
 
-// הגדרת אחסון חכמה שקולטת תגיות בזמן אמת
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // שליפת הנתונים שנשלחו ב-FormData מהדפדפן
     const tags = req.body.tags ? req.body.tags.split(',') : [];
-    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled";
+    // אם המשתמש לא הזין שם, נשמור כ-Unnamed
+    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Unnamed";
 
     return {
       folder: 'clothing_gallery',
       allowed_formats: ['jpg', 'png', 'jpeg'],
-      tags: tags, // התגיות מוצמדות כאן
-      context: { caption: title } // הכותרת מוצמדת כאן
+      tags: tags,
+      context: { caption: title }
     };
   },
 });
@@ -51,7 +50,7 @@ app.get('/images', async (req, res) => {
 
     const images = result.resources.map(resource => ({
       id: resource.public_id,
-      title: (resource.context && resource.context.custom && resource.context.custom.caption) || "Untitled",
+      title: (resource.context && resource.context.custom && resource.context.custom.caption) || "Unnamed",
       filename: resource.secure_url,
       tags: resource.tags || []
     }));
@@ -62,7 +61,6 @@ app.get('/images', async (req, res) => {
   }
 });
 
-// הנתיב עכשיו הרבה יותר נקי כי ה-storage עושה את העבודה
 app.post('/upload', upload.single('image'), (req, res) => {
   res.json({ success: true });
 });
