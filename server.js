@@ -10,9 +10,9 @@ app.use(express.json());
 
 // --- הגדרות Cloudinary (תעתיק מהאתר שלהם) ---
 cloudinary.config({
-  cloud_name: 'dafzhnkg8',
-  api_key: '235962986363246',
-  api_secret: 'G_94zHR-WCf3jrp79FP8k5GUCJk'
+  cloud_name: process.env.YOUR_CLOUD_NAME,
+  api_key: process.env.YOUR_API_KEY,
+  api_secret: process.env.YOUR_API_SECRET
 });
 
 // הגדרת האחסון בענן
