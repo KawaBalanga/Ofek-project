@@ -37,8 +37,8 @@
 <h1>The Collection</h1>
 
 <div class="upload-box">
-    <input type="text" id="title" placeholder="Item Name (Optional)">
-    <div class="drop-area" id="dropArea">Click to choose images</div>
+    <input type="text" id="title" placeholder="Item Name">
+    <div class="drop-area" id="dropArea">Click to select images</div>
     <div class="tag-selector" id="tagSelector"></div>
     <input type="file" id="fileInput" hidden multiple>
     <button class="main-btn" id="uploadBtn" onclick="uploadImage()">Add to collection</button>
@@ -56,7 +56,6 @@
     let currentFilter = 'all';
     let selectedFiles = [];
 
-    // יצירת ממשק תגיות
     const tagSelector = document.getElementById('tagSelector');
     allowedTags.forEach(tag => {
         const span = document.createElement('span');
@@ -70,7 +69,6 @@
         tagSelector.appendChild(span);
     });
 
-    // פילטרים
     const filterNav = document.getElementById('filterNav');
     allowedTags.forEach(tag => {
         const span = document.createElement('span');
@@ -91,12 +89,11 @@
     async function uploadImage() {
         if (selectedFiles.length === 0) return alert("Select images!");
         const btn = document.getElementById('uploadBtn');
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+        btn.disabled = true; btn.innerText = "Uploading...";
 
         for (let file of selectedFiles) {
             const formData = new FormData();
-            // חשוב: תגיות לפני התמונה
+            // תגיות לפני התמונה כדי ש-Multer יקרא אותן בזמן
             formData.append('tags', Array.from(selectedTagsForUpload).join(','));
             formData.append('title', document.getElementById('title').value || "Unnamed");
             formData.append('image', file);
@@ -136,7 +133,7 @@
                             <div class="tag-selector" style="margin-bottom:10px">
                                 ${allowedTags.map(t => `<span class="tag-option ${myManualTags.includes(t) ? 'selected' : ''}" onclick="this.classList.toggle('selected')">${t}</span>`).join('')}
                             </div>
-                            <button class="main-btn" style="padding:6px; font-size:0.7rem" onclick="saveTags('${item.id}', '${safeId}')">Update</button>
+                            <button class="main-btn" style="padding:6px; font-size:0.7rem" onclick="saveTags('${item.id}', '${safeId}', this)">Update</button>
                         </div>
                     </div>
                 `;
@@ -147,10 +144,11 @@
 
     function toggleEdit(safeId) { document.getElementById(`edit-${safeId}`).classList.toggle('active'); }
 
-    async function saveTags(id, safeId) {
+    async function saveTags(id, safeId, btn) {
         const panel = document.getElementById(`edit-${safeId}`);
         const selected = Array.from(panel.querySelectorAll('.tag-option.selected')).map(el => el.innerText);
         
+        btn.innerText = "Saving...";
         const res = await fetch('/update-tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -158,9 +156,11 @@
         });
 
         if (res.ok) {
-            loadGallery();
+            btn.innerText = "Saved!";
+            setTimeout(() => { toggleEdit(safeId); loadGallery(); }, 800);
         } else {
             alert("Update failed");
+            btn.innerText = "Update";
         }
     }
 
