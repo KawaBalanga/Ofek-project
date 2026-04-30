@@ -3,65 +3,74 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname)); // מאפשר להגיש קבצים סטטיים מהתיקייה הנוכחית
 
-// --- הגדרות Cloudinary (תעתיק מהאתר שלהם) ---
+// הגדרות Cloudinary - וודא שהגדרת את אלו ב-Render Environment Variables
 cloudinary.config({
   cloud_name: process.env.YOUR_CLOUD_NAME,
   api_key: process.env.YOUR_API_KEY,
   api_secret: process.env.YOUR_API_SECRET
 });
 
-// הגדרת האחסון בענן
+// הגדרת אחסון עם AI Tagging
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'gallery_uploads', // שם התיקייה שתיפתח לך בענן
-    allowed_formats: ['jpg', 'png', 'jpeg']
+    folder: 'clothing_gallery',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    // הפעלת AI לזיהוי בגדים - דורש ש-Google Auto Tagging יהיה מופעל ב-Cloudinary Add-ons
+    categorization: 'google_tagging',
+    auto_tagging: 0.6
   },
 });
 
 const upload = multer({ storage: storage });
 
-// "מסד נתונים" זמני (במציאות עדיף להשתמש ב-Database אמיתי)
-let dbImages = [];
+// "מסד נתונים" זמני בזיכרון
+let dbImages = []; 
 
-// 1. קבלת כל התמונות (מתאים ל-loadGallery שלך)
+// נתיב ראשי להצגת האתר
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// קבלת כל התמונות
 app.get('/images', (req, res) => {
   res.json(dbImages);
 });
 
-// 2. העלאת תמונה חדשה (מתאים ל-uploadImage שלך)
+// העלאת תמונה
 app.post('/upload', upload.single('image'), (req, res) => {
-  const newImage = {
-    id: Date.now().toString(),
-    title: req.body.title,
-    // כאן הקסם: אנחנו שומרים את הכתובת של Cloudinary
-    filename: req.file.path
-  };
-  dbImages.push(newImage);
-  res.json(newImage);
+  try {
+    // חילוץ תגיות ה-AI שחזרו מ-Cloudinary
+    const tags = req.file.info && req.file.info.categorization ? 
+                 req.file.info.categorization.google_tagging.data : [];
+
+    const newImage = {
+      id: Date.now().toString(), // משמש גם כחותמת זמן לתאריך
+      title: req.body.title,
+      filename: req.file.path,
+      tags: tags
+    };
+    
+    dbImages.push(newImage);
+    res.json(newImage);
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "Failed to process image tags" });
+  }
 });
 
-// 3. מחיקת תמונה (מתאים ל-deleteImage שלך)
+// מחיקת תמונה
 app.delete('/images/:id', (req, res) => {
   dbImages = dbImages.filter(img => img.id !== req.params.id);
   res.json({ success: true });
 });
 
-// חשוב מאוד עבור Render והעולם החיצון
 const PORT = process.env.PORT || 3000;
-// הגדרה שמאפשרת לשרת לגשת לקבצים שנמצאים בתיקייה שלו
-app.use(express.static(__dirname));
-
-// פונקציה שאומרת לשרת: כשמישהו נכנס לכתובת הראשית, תביא לו את ה-HTML
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
