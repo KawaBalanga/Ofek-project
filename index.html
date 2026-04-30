@@ -3,30 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Clothing Gallery</title>
+    <title>AI Fashion Gallery</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a90e2; --danger: #ff4757; --bg: #f0f2f5; --card: #ffffff; }
-        body { font-family: 'Assistant', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        .upload-box { max-width: 550px; margin: auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-        .drop-area { border: 2px dashed #cbd5e0; padding: 40px; border-radius: 15px; margin-bottom: 15px; cursor: pointer; color: #718096; }
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 10px; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
-        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; margin-top: 30px; }
-        .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .card img { width: 100%; height: 220px; object-fit: cover; }
-        .card-info { padding: 15px; }
-        .ai-tags { font-size: 0.8rem; color: var(--primary); font-weight: 600; background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-block; margin-top: 5px; }
-        .delete-btn { color: var(--danger); background: none; border: none; text-decoration: underline; cursor: pointer; margin-top: 10px; }
+        :root { --primary: #000000; --danger: #ff4757; --bg: #ffffff; --card: #ffffff; }
+        
+        body { 
+            font-family: 'Assistant', sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            padding: 10px; 
+            color: #000; 
+        }
+
+        h1 { text-align: center; font-weight: 300; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
+
+        .upload-box { 
+            max-width: 500px; 
+            margin: 0 auto 40px auto; 
+            text-align: center; 
+            border: 1px solid #eee;
+            padding: 20px;
+        }
+
+        .drop-area { 
+            border: 1px dashed #ccc; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            cursor: pointer; 
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"] { 
+            width: 100%; padding: 10px; border: 1px solid #ddd; 
+            margin-bottom: 10px; box-sizing: border-box; font-family: inherit;
+        }
+
+        button { 
+            width: 100%; padding: 12px; background: #000; color: #fff; 
+            border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        button:disabled { background: #ccc; }
+
+        /* גלריה - מראה ZARA */
+        .gallery { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 15px; 
+        }
+
+        .card { 
+            background: transparent; 
+            display: flex; 
+            flex-direction: column; 
+            border: none;
+        }
+
+        .card img { 
+            width: 100%; 
+            height: auto; 
+            aspect-ratio: 2 / 3;
+            object-fit: cover; 
+            background-color: #f9f9f9;
+        }
+
+        .card-info { padding: 10px 0; }
+
+        .card-title { 
+            margin: 0; 
+            font-size: 0.85rem; 
+            font-weight: 400; 
+            text-transform: uppercase;
+        }
+
+        .ai-tags { 
+            font-size: 0.75rem; 
+            color: #777; 
+            margin-top: 4px; 
+        }
+
+        .delete-btn { 
+            color: var(--danger); 
+            background: none; 
+            border: none; 
+            padding: 0; 
+            font-size: 0.7rem; 
+            text-decoration: underline; 
+            cursor: pointer; 
+            margin-top: 8px;
+            text-align: left;
+        }
+
+        /* התאמה לטלפון - 2 עמודות, 4 בפריים */
+        @media (max-width: 600px) {
+            .gallery { 
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 10px; 
+            }
+            .card-title { font-size: 0.75rem; }
+            .ai-tags { font-size: 0.65rem; }
+        }
     </style>
 </head>
 <body>
 
+<h1>The Collection</h1>
+
 <div class="upload-box">
     <input type="text" id="title" placeholder="Title (Optional)">
-    <div class="drop-area" id="dropArea">Click to upload images</div>
+    <div class="drop-area" id="dropArea">Drag images or Click to browse</div>
     <input type="file" id="fileInput" hidden multiple>
-    <button id="uploadBtn" onclick="uploadImage()">Upload</button>
+    <button id="uploadBtn" onclick="uploadImage()">Add to collection</button>
 </div>
 
 <div class="gallery" id="gallery"></div>
@@ -38,7 +127,10 @@ const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 
 dropArea.onclick = () => fileInput.click();
-fileInput.onchange = () => { selectedFiles = Array.from(fileInput.files); dropArea.innerText = `${selectedFiles.length} files selected`; };
+fileInput.onchange = () => { 
+    selectedFiles = Array.from(fileInput.files); 
+    dropArea.innerText = `${selectedFiles.length} files selected`; 
+};
 
 async function uploadImage() {
     if (selectedFiles.length === 0) return alert("Select images!");
@@ -53,9 +145,10 @@ async function uploadImage() {
     }
 
     uploadBtn.disabled = false;
-    uploadBtn.innerText = "Upload";
+    uploadBtn.innerText = "Add to collection";
+    document.getElementById('title').value = '';
+    dropArea.innerText = "Drag images or Click to browse";
     selectedFiles = [];
-    dropArea.innerText = "Click to upload images";
     loadGallery();
 }
 
@@ -64,25 +157,27 @@ function loadGallery() {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
         
+        // מילים שנרצה לסנן מה-AI כדי לקבל תוצאות מדויקות
+        const boringWords = [
+            'clothing', 'apparel', 'fashion', 'sleeve', 'textile', 
+            'person', 'wear', 'clothes hanger', 'hanger', 'button', 'fastener', 'white', 'black'
+        ];
+
         data.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
             
-            // סינון AI משופר: מדלגים על מילים כלליות
-            const boringWords = ['clothing', 'apparel', 'fashion', 'sleeve', 'textile', 'person', 'wear', 'clothes hanger', 'hanger', 'button', 'fastener'
-            ];
-            let tagsDisplay = 'Clothing';
-            
+            let tagsDisplay = 'Item';
             if (item.tags && item.tags.length > 0) {
                 const specific = item.tags.filter(t => !boringWords.includes(t.toLowerCase())).slice(0, 2);
-                if (specific.length > 0) tagsDisplay = specific.join(', ');
+                if (specific.length > 0) tagsDisplay = specific.join(' / ');
             }
 
             card.innerHTML = `
-                <img src="${item.filename}">
+                <img src="${item.filename}" loading="lazy">
                 <div class="card-info">
-                    <strong>${item.title}</strong><br>
-                    <div class="ai-tags">🏷️ ${tagsDisplay}</div><br>
+                    <div class="card-title">${item.title}</div>
+                    <div class="ai-tags">${tagsDisplay}</div>
                     <button class="delete-btn" onclick="deleteImg('${item.id}')">Remove</button>
                 </div>
             `;
@@ -91,7 +186,7 @@ function loadGallery() {
     });
 }
 
-function deleteImg(id) { if(confirm("Delete?")) fetch(`/images/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(loadGallery); }
+function deleteImg(id) { if(confirm("Remove?")) fetch(`/images/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(loadGallery); }
 loadGallery();
 </script>
 </body>
