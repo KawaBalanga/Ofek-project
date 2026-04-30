@@ -16,16 +16,28 @@ cloudinary.config({
   api_secret: process.env.YOUR_API_SECRET
 });
 
+// הגדרת אחסון חכמה שקולטת תגיות בזמן אמת
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'clothing_gallery',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-    // ביטלנו את ה-categorization של ה-AI
+  params: async (req, file) => {
+    // שליפת הנתונים שנשלחו ב-FormData מהדפדפן
+    const tags = req.body.tags ? req.body.tags.split(',') : [];
+    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled";
+
+    return {
+      folder: 'clothing_gallery',
+      allowed_formats: ['jpg', 'png', 'jpeg'],
+      tags: tags, // התגיות מוצמדות כאן
+      context: { caption: title } // הכותרת מוצמדת כאן
+    };
   },
 });
 
 const upload = multer({ storage: storage });
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 app.get('/images', async (req, res) => {
   try {
@@ -34,7 +46,7 @@ app.get('/images', async (req, res) => {
       prefix: 'clothing_gallery/', 
       max_results: 500,
       context: true,
-      tags: true // אנחנו עדיין מושכים תגיות, הפעם אלו התגיות שאתה שמת
+      tags: true
     });
 
     const images = result.resources.map(resource => ({
@@ -50,23 +62,9 @@ app.get('/images', async (req, res) => {
   }
 });
 
-app.post('/upload', upload.single('image'), async (req, res) => {
-  try {
-    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled";
-    const tags = req.body.tags ? req.body.tags.split(',') : [];
-
-    // שמירת הכותרת
-    await cloudinary.uploader.add_context(`caption=${title}`, [req.file.filename]);
-    
-    // הוספת התגיות שבחרת ידנית
-    if (tags.length > 0) {
-        await cloudinary.uploader.add_tags(tags, [req.file.filename]);
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Upload failed" });
-  }
+// הנתיב עכשיו הרבה יותר נקי כי ה-storage עושה את העבודה
+app.post('/upload', upload.single('image'), (req, res) => {
+  res.json({ success: true });
 });
 
 app.delete('/images/:id', async (req, res) => {
