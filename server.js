@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// הגדרות Cloudinary - נלקח מה-Environment Variables ב-Render
 cloudinary.config({
   cloud_name: process.env.YOUR_CLOUD_NAME,
   api_key: process.env.YOUR_API_KEY,
@@ -32,10 +33,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// נתיב חדש: מושך את כל התמונות והתגיות ישירות מ-Cloudinary
+// שליפת כל התמונות ישירות מהענן (מונע מחיקה ב-Restart)
 app.get('/images', async (req, res) => {
   try {
-    // אנחנו מבקשים מ-Cloudinary את כל הקבצים בתיקייה כולל תגיות ה-AI
     const result = await cloudinary.api.resources({
       type: 'upload',
       prefix: 'clothing_gallery/', 
@@ -44,28 +44,25 @@ app.get('/images', async (req, res) => {
       tags: true
     });
 
-    // מעבדים את הנתונים לפורמט שהאתר שלנו מכיר
     const images = result.resources.map(resource => ({
       id: resource.public_id,
       title: (resource.context && resource.context.custom && resource.context.custom.caption) || "Untitled",
       filename: resource.secure_url,
-      // ב-Cloudinary API התגיות של גוגל נמצאות במיקום שונה מעט
       tags: resource.tags || []
     }));
 
     res.json(images);
   } catch (error) {
     console.error("Cloudinary fetch error:", error);
-    res.status(500).json({ error: "Failed to fetch images from cloud" });
+    res.status(500).json({ error: "Failed to fetch images" });
   }
 });
 
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
-    // הוספת הכותרת ל-Metadata של התמונה ב-Cloudinary כדי שתישמר לתמיד
-    if (req.body.title) {
-        await cloudinary.uploader.add_context(`caption=${req.body.title}`, [req.file.filename]);
-    }
+    // שמירת הכותרת בתוך ה-Metadata של התמונה בענן
+    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled";
+    await cloudinary.uploader.add_context(`caption=${title}`, [req.file.filename]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Upload failed" });
@@ -74,8 +71,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
 
 app.delete('/images/:id', async (req, res) => {
   try {
-    const publicId = req.params.id;
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(req.params.id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Delete failed" });
