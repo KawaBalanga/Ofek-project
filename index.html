@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Gallery</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+
+/* Upload box */
+.upload-box {
+    max-width: 500px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.drop-area {
+    border: 2px dashed #aaa;
+    padding: 30px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.drop-area.dragover {
+    background: #e3f2fd;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+/* Gallery */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.card {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+button.delete {
+    background: red;
+    color: white;
+    border: none;
+    margin-top: 5px;
+    cursor: pointer;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    background: rgba(0,0,0,0.9);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal img {
+    max-width: 80%;
+}
+</style>
+</head>
+
+<body>
+
+<h1>My Image Gallery</h1>
+
+<div class="upload-box">
+    <input type="text" id="title" placeholder="Image title">
+
+    <div class="drop-area" id="dropArea">
+        Drag & Drop image here or click
+    </div>
+
+    <input type="file" id="fileInput" hidden>
+    <button onclick="uploadImage()">Upload</button>
+</div>
+
+<div class="gallery" id="gallery"></div>
+
+<div class="modal" id="modal" onclick="this.style.display='none'">
+    <img id="modalImg">
+</div>
+
+<script>
+const dropArea = document.getElementById('dropArea');
+const fileInput = document.getElementById('fileInput');
+let selectedFile = null;
+
+// Drag & Drop[cite: 1]
+dropArea.onclick = () => fileInput.click();
+
+dropArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropArea.classList.add('dragover');
+});
+
+dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('dragover');
+});
+
+dropArea.addEventListener('drop', e => {
+    e.preventDefault();
+    dropArea.classList.remove('dragover');
+    selectedFile = e.dataTransfer.files[0];
+    dropArea.innerText = selectedFile.name;
+});
+
+fileInput.addEventListener('change', () => {
+    selectedFile = fileInput.files[0];
+    dropArea.innerText = selectedFile.name;
+});
+
+// Upload - פונה כעת לנתיב יחסי בשרת[cite: 1]
+function uploadImage() {
+    const title = document.getElementById('title').value;
+    if (!selectedFile || !title) return alert("Missing data");
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('image', selectedFile);
+
+    fetch('/upload', {
+        method: 'POST',
+        body: formData
+    }).then(res => {
+        if (res.ok) {
+            loadGallery();
+            document.getElementById('title').value = '';
+            dropArea.innerText = "Drag & Drop image here";
+            selectedFile = null;
+        } else {
+            alert("Upload failed");
+        }
+    });
+}
+
+// Load images - מציג את התמונה ישירות מהענן[cite: 1]
+function loadGallery() {
+    fetch('/images')
+    .then(res => res.json())
+    .then(data => {
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            gallery.innerHTML = "<p>No images yet</p>";
+            return;
+        }
+
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const img = document.createElement('img');
+            // item.filename כעת מכיל את ה-URL המלא של Cloudinary
+            img.src = item.filename;
+            img.onclick = () => {
+                document.getElementById('modalImg').src = img.src;
+                document.getElementById('modal').style.display = 'flex';
+            };
+
+            const title = document.createElement('p');
+            title.innerText = item.title;
+
+            const del = document.createElement('button');
+            del.className = 'delete';
+            del.innerText = "Delete";
+            del.onclick = () => deleteImage(item.id);
+
+            card.append(img, title, del);
+            gallery.appendChild(card);
+        });
+    });
+}
+
+// Delete[cite: 1]
+function deleteImage(id) {
+    fetch(`/images/${id}`, {
+        method: 'DELETE'
+    }).then(loadGallery);
+}
+
+// טעינה ראשונית
+loadGallery();
+</script>
+
+</body>
+</html>
