@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Clothing Collection</title>
+    <title>AI Clothing Gallery Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #4a90e2; --danger: #ff4757; --bg: #f0f2f5; --card: #ffffff; }
@@ -20,9 +20,9 @@
         .card { background: var(--card); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; display: flex; flex-direction: column; }
         .card img { width: 100%; height: 220px; object-fit: cover; cursor: pointer; }
         .card-info { padding: 15px; }
-        .card-title { margin: 0; font-size: 1.1rem; }
-        .ai-tags { font-size: 0.75rem; color: var(--primary); font-weight: 600; margin-top: 5px; }
-        .delete-btn { background: none; color: var(--danger); width: auto; padding: 0; margin-top: 10px; text-decoration: underline; font-size: 0.85rem; }
+        .card-title { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .ai-tags { font-size: 0.8rem; color: var(--primary); font-weight: 600; margin-top: 8px; background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        .delete-btn { background: none; color: var(--danger); width: auto; padding: 0; margin-top: 15px; text-decoration: underline; font-size: 0.85rem; }
         .modal { display: none; position: fixed; background: rgba(0,0,0,0.9); top: 0; left: 0; width: 100%; height: 100%; justify-content: center; align-items: center; z-index: 2000; }
         .modal img { max-width: 90%; max-height: 80%; border-radius: 10px; }
     </style>
@@ -32,20 +32,21 @@
 <h1>Clothing Collection AI</h1>
 
 <div class="upload-box">
-    <input type="text" id="title" placeholder="Collection/Item Name">
-    <div class="drop-area" id="dropArea">Drag & Drop images or Click</div>
+    <input type="text" id="title" placeholder="Title (Optional)">
+    <div class="drop-area" id="dropArea">Drag images here or Click to browse</div>
     <input type="file" id="fileInput" hidden multiple>
     <button id="uploadBtn" onclick="uploadImage()">Start Uploading</button>
 </div>
 
 <div class="filter-container">
-    <label>Filter: </label>
+    <label>Filter by Category: </label>
     <select id="categoryFilter" onchange="loadGallery()">
         <option value="all">All Items</option>
         <option value="pants">Pants</option>
-        <option value="shirt">Shirts</option>
+        <option value="shirt">Shirts / Tops</option>
         <option value="shoes">Shoes</option>
         <option value="dress">Dresses</option>
+        <option value="suit">Suits / Jackets</option>
     </select>
 </div>
 
@@ -62,7 +63,10 @@ const fileInput = document.getElementById('fileInput');
 const uploadBtn = document.getElementById('uploadBtn');
 
 dropArea.onclick = () => fileInput.click();
-fileInput.onchange = () => { selectedFiles = Array.from(fileInput.files); dropArea.innerText = `${selectedFiles.length} files ready`; };
+fileInput.onchange = () => { 
+    selectedFiles = Array.from(fileInput.files); 
+    dropArea.innerText = `${selectedFiles.length} files selected`; 
+};
 
 dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
 dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
@@ -70,35 +74,35 @@ dropArea.addEventListener('drop', e => {
     e.preventDefault();
     dropArea.classList.remove('dragover');
     selectedFiles = Array.from(e.dataTransfer.files);
-    dropArea.innerText = `${selectedFiles.length} files ready`;
+    dropArea.innerText = `${selectedFiles.length} files selected`;
 });
 
 async function uploadImage() {
-    const title = document.getElementById('title').value;
-    if (selectedFiles.length === 0 || !title) return alert("Missing title or files!");
+    const titleInput = document.getElementById('title').value;
+    // עכשיו בודקים רק אם נבחרו קבצים, ה-title לא חובה
+    if (selectedFiles.length === 0) return alert("Please select images first!");
 
     uploadBtn.disabled = true;
 
-    // לולאה שמעלה תמונה אחת בכל פעם ליציבות
     for (let i = 0; i < selectedFiles.length; i++) {
-        uploadBtn.innerText = `Processing ${i + 1} / ${selectedFiles.length}...`;
-        
+        uploadBtn.innerText = `Uploading ${i + 1} of ${selectedFiles.length}...`;
         const formData = new FormData();
-        formData.append('title', title);
+        // שולחים את הכותרת כפי שהיא (השרת יטפל במקרה של ריק)
+        formData.append('title', titleInput);
         formData.append('image', selectedFiles[i]);
 
         try {
             const res = await fetch('/upload', { method: 'POST', body: formData });
             if (!res.ok) throw new Error();
         } catch (err) {
-            console.error("Failed:", selectedFiles[i].name);
+            console.error("Upload failed for:", selectedFiles[i].name);
         }
     }
 
     uploadBtn.disabled = false;
     uploadBtn.innerText = "Start Uploading";
     document.getElementById('title').value = '';
-    dropArea.innerText = "Drag & Drop images or Click";
+    dropArea.innerText = "Drag images here or Click to browse";
     selectedFiles = [];
     loadGallery();
 }
@@ -108,17 +112,30 @@ function loadGallery() {
     fetch('/images').then(res => res.json()).then(data => {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
-        const filtered = data.filter(item => filter === 'all' || (item.tags && item.tags.some(t => t.toLowerCase().includes(filter))));
         
+        const filtered = data.filter(item => 
+            filter === 'all' || (item.tags && item.tags.some(t => t.toLowerCase().includes(filter)))
+        );
+
+        if (filtered.length === 0) {
+            gallery.innerHTML = "<p style='grid-column: 1/-1; text-align: center;'>No items found.</p>";
+            return;
+        }
+
         filtered.forEach(item => {
             const card = document.createElement('div');
             card.className = 'card';
-            const tags = (item.tags && item.tags.length > 0) ? item.tags.slice(0,2).join(', ') : 'Processing...';
+            
+            const tagsText = (item.tags && Array.isArray(item.tags) && item.tags.length > 0) 
+                             ? item.tags.slice(0, 2).join(', ') 
+                             : 'Clothing';
+
             card.innerHTML = `
-                <img src="${item.filename}" onclick="showModal('${item.filename}')">
+                <img src="${item.filename}" onclick="showModal('${item.filename}')" loading="lazy">
                 <div class="card-info">
                     <h3 class="card-title">${item.title}</h3>
-                    <div class="ai-tags">AI: ${tags}</div>
+                    <div class="ai-tags">🏷️ ${tagsText}</div>
+                    <br>
                     <button class="delete-btn" onclick="deleteImg('${item.id}')">Remove</button>
                 </div>
             `;
@@ -128,7 +145,7 @@ function loadGallery() {
 }
 
 function showModal(src) { document.getElementById('modalImg').src = src; document.getElementById('modal').style.display = 'flex'; }
-function deleteImg(id) { if(confirm("Remove?")) fetch(`/images/${id}`, { method: 'DELETE' }).then(loadGallery); }
+function deleteImg(id) { if(confirm("Remove this item?")) fetch(`/images/${id}`, { method: 'DELETE' }).then(loadGallery); }
 
 loadGallery();
 </script>
