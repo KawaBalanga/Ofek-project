@@ -31,7 +31,7 @@
         .card-info { padding: 12px 0; }
         .card-title { font-size: 0.8rem; text-transform: uppercase; font-weight: 400; margin: 0; }
         .card-tags { font-size: 0.7rem; color: #999; margin-top: 5px; }
-        .delete-btn { color: #ff4757; background: none; border: none; font-size: 0.65rem; text-decoration: underline; cursor: pointer; margin-top: 10px; text-align: left; }
+        .delete-btn { color: #ff4757; background: none; border: none; font-size: 0.65rem; text-decoration: underline; cursor: pointer; margin-top: 10px; text-align: left; padding: 0; }
 
         @media (max-width: 600px) {
             .gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -62,7 +62,7 @@
     let currentFilter = 'all';
     let selectedFiles = [];
 
-    // יצירת כפתורי בחירה
+    // יצירת בחירת תגיות
     const tagSelector = document.getElementById('tagSelector');
     allowedTags.forEach(tag => {
         const span = document.createElement('span');
@@ -102,7 +102,6 @@
 
         for (let file of selectedFiles) {
             const formData = new FormData();
-            // סדר חשוב: תגיות וכותרת לפני התמונה
             formData.append('title', document.getElementById('title').value);
             formData.append('tags', Array.from(selectedTagsForUpload).join(','));
             formData.append('image', file);
@@ -110,7 +109,6 @@
             await fetch('/upload', { method: 'POST', body: formData });
         }
 
-        // ניקוי
         selectedTagsForUpload.clear();
         document.querySelectorAll('.tag-option').forEach(t => t.classList.remove('selected'));
         document.getElementById('title').value = '';
@@ -132,17 +130,26 @@
             gallery.innerHTML = '';
             
             data.forEach(item => {
+                // 1. טיפול בשם (Unnamed)
+                let displayTitle = item.title;
+                if (!displayTitle || displayTitle.trim() === "" || displayTitle.toLowerCase() === "untitled") {
+                    displayTitle = "Unnamed";
+                }
+
+                // 2. טיפול בתגיות (Untagged)
                 const myManualTags = item.tags.filter(t => allowedTags.includes(t));
+                let displayTags = myManualTags.length > 0 ? myManualTags.join(' / ') : "Untagged";
+
+                // פילטר
                 if (currentFilter !== 'all' && !myManualTags.some(t => t.toLowerCase() === currentFilter)) return;
 
                 const card = document.createElement('div');
                 card.className = 'card';
-                const displayTags = myManualTags.length > 0 ? myManualTags.join(' / ') : '';
 
                 card.innerHTML = `
                     <img src="${item.filename}" loading="lazy">
                     <div class="card-info">
-                        <div class="card-title">${item.title}</div>
+                        <div class="card-title">${displayTitle}</div>
                         <div class="card-tags">${displayTags}</div>
                         <button class="delete-btn" onclick="deleteImg('${item.id}')">Remove</button>
                     </div>
