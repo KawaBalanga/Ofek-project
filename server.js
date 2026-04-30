@@ -10,7 +10,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// הגדרות Cloudinary - נלקח מה-Environment Variables ב-Render
 cloudinary.config({
   cloud_name: process.env.YOUR_CLOUD_NAME,
   api_key: process.env.YOUR_API_KEY,
@@ -22,18 +21,12 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'clothing_gallery',
     allowed_formats: ['jpg', 'png', 'jpeg'],
-    categorization: 'google_tagging',
-    auto_tagging: 0.6
+    // ביטלנו את ה-categorization של ה-AI
   },
 });
 
 const upload = multer({ storage: storage });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// שליפת כל התמונות ישירות מהענן (מונע מחיקה ב-Restart)
 app.get('/images', async (req, res) => {
   try {
     const result = await cloudinary.api.resources({
@@ -41,7 +34,7 @@ app.get('/images', async (req, res) => {
       prefix: 'clothing_gallery/', 
       max_results: 500,
       context: true,
-      tags: true
+      tags: true // אנחנו עדיין מושכים תגיות, הפעם אלו התגיות שאתה שמת
     });
 
     const images = result.resources.map(resource => ({
@@ -53,16 +46,23 @@ app.get('/images', async (req, res) => {
 
     res.json(images);
   } catch (error) {
-    console.error("Cloudinary fetch error:", error);
     res.status(500).json({ error: "Failed to fetch images" });
   }
 });
 
 app.post('/upload', upload.single('image'), async (req, res) => {
   try {
-    // שמירת הכותרת בתוך ה-Metadata של התמונה בענן
     const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Untitled";
+    const tags = req.body.tags ? req.body.tags.split(',') : [];
+
+    // שמירת הכותרת
     await cloudinary.uploader.add_context(`caption=${title}`, [req.file.filename]);
+    
+    // הוספת התגיות שבחרת ידנית
+    if (tags.length > 0) {
+        await cloudinary.uploader.add_tags(tags, [req.file.filename]);
+    }
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Upload failed" });
