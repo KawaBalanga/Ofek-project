@@ -23,12 +23,10 @@
         .card { display: flex; flex-direction: column; }
         .card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; background: #f9f9f9; }
         .card-info { padding: 12px 0; }
-        .card-title { font-size: 0.8rem; text-transform: uppercase; font-weight: 400; margin: 0; }
+        .card-title { font-size: 0.8rem; text-transform: uppercase; margin: 0; }
         .card-tags { font-size: 0.7rem; color: #999; margin-top: 5px; }
         .actions { display: flex; gap: 12px; margin-top: 10px; }
         .btn-link { background: none; border: none; font-size: 0.65rem; text-decoration: underline; cursor: pointer; padding: 0; text-transform: uppercase; }
-        .edit-btn { color: var(--accent); }
-        .delete-btn { color: var(--danger); }
         .edit-panel { display: none; background: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #eee; }
         .edit-panel.active { display: block; }
         @media (max-width: 600px) { .gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
@@ -82,7 +80,6 @@
 
     const dropArea = document.getElementById('dropArea');
     const fileInput = document.getElementById('fileInput');
-
     dropArea.onclick = () => fileInput.click();
     fileInput.onchange = () => { 
         selectedFiles = Array.from(fileInput.files); 
@@ -91,8 +88,7 @@
 
     async function uploadImage() {
         if (selectedFiles.length === 0) return alert("Select images!");
-        const btn = document.getElementById('uploadBtn');
-        btn.disabled = true;
+        document.getElementById('uploadBtn').disabled = true;
         for (let file of selectedFiles) {
             const formData = new FormData();
             formData.append('title', document.getElementById('title').value);
@@ -105,7 +101,7 @@
 
     function setFilter(tag, el) {
         currentFilter = tag.toLowerCase();
-        document.querySelectorAll('.filter-link').forEach(link => link.classList.remove('active'));
+        document.querySelectorAll('.filter-link').forEach(l => l.classList.remove('active'));
         el.classList.add('active');
         loadGallery();
     }
@@ -118,20 +114,17 @@
                 const myManualTags = item.tags.filter(t => allowedTags.includes(t));
                 if (currentFilter !== 'all' && !myManualTags.some(t => t.toLowerCase() === currentFilter)) return;
                 
-                const displayTitle = (!item.title || item.title === "Unnamed") ? "Unnamed" : item.title;
-                const displayTags = myManualTags.length > 0 ? myManualTags.join(' / ') : "Untagged";
                 const safeId = item.id.replace(/\//g, '_');
-
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
                     <img src="${item.filename}" loading="lazy">
                     <div class="card-info">
-                        <div class="card-title">${displayTitle}</div>
-                        <div class="card-tags">${displayTags}</div>
+                        <div class="card-title">${item.title}</div>
+                        <div class="card-tags">${myManualTags.join(' / ') || 'Untagged'}</div>
                         <div class="actions">
-                            <button class="btn-link edit-btn" onclick="toggleEdit('${safeId}')">Edit Tags</button>
-                            <button class="btn-link delete-btn" onclick="deleteImg('${item.id}')">Remove</button>
+                            <button class="btn-link" style="color:var(--accent)" onclick="toggleEdit('${safeId}')">Edit Tags</button>
+                            <button class="btn-link" style="color:var(--danger)" onclick="deleteImg('${item.id}')">Remove</button>
                         </div>
                         <div class="edit-panel" id="edit-${safeId}">
                             <div class="tag-selector" style="margin-bottom:10px">
@@ -146,32 +139,25 @@
         });
     }
 
-    function toggleEdit(safeId) {
-        document.getElementById(`edit-${safeId}`).classList.toggle('active');
-    }
+    function toggleEdit(safeId) { document.getElementById(`edit-${safeId}`).classList.toggle('active'); }
 
     async function saveTags(id, safeId) {
         const panel = document.getElementById(`edit-${safeId}`);
         const selected = Array.from(panel.querySelectorAll('.tag-option.selected')).map(el => el.innerText);
         
-        try {
-            const res = await fetch(`/images/${encodeURIComponent(id)}/tags`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tags: selected })
-            });
-            if (res.ok) {
-                loadGallery();
-            } else {
-                alert("Update failed");
-            }
-        } catch (err) {
-            console.error(err);
-        }
+        const res = await fetch('/update-tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId: id, tags: selected })
+        });
+        if (res.ok) loadGallery();
     }
 
-    function deleteImg(id) { 
-        if(confirm("Remove item?")) fetch(`/images/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(loadGallery); 
+    async function deleteImg(id) { 
+        if(confirm("Remove?")) {
+            await fetch(`/delete-image?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+            loadGallery();
+        }
     }
 
     loadGallery();
