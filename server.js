@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// הגדרות ענן - וודא שהפרטים נכונים
 cloudinary.config({
   cloud_name: process.env.YOUR_CLOUD_NAME,
   api_key: process.env.YOUR_API_KEY,
@@ -20,7 +21,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     const tags = req.body.tags ? req.body.tags.split(',') : [];
-    const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Unnamed";
+    const title = req.body.title || "Unnamed";
     return {
       folder: 'clothing_gallery',
       allowed_formats: ['jpg', 'png', 'jpeg'],
@@ -32,10 +33,9 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
+// שליפת תמונות
 app.get('/images', async (req, res) => {
   try {
     const result = await cloudinary.api.resources({
@@ -57,33 +57,27 @@ app.get('/images', async (req, res) => {
   }
 });
 
-app.post('/upload', upload.single('image'), (req, res) => {
-  res.json({ success: true });
-});
+app.post('/upload', upload.single('image'), (req, res) => res.json({ success: true }));
 
-// התיקון כאן: שימוש ב-(*) מאפשר לקבל ID שכולל לוכסנים
-app.put('/images/:id(*)/tags', async (req, res) => {
+// עדכון תגיות - עבר ל-POST רגיל כדי למנוע את ה-PathError שראינו
+app.post('/update-tags', async (req, res) => {
   try {
-    const publicId = req.params.id;
-    const { tags } = req.body;
-    
-    // מחיקת תגיות ישנות
+    const { publicId, tags } = req.body;
     await cloudinary.uploader.remove_all_tags([publicId]);
-    
-    // הוספת חדשות (אם נבחרו)
     if (tags && tags.length > 0) {
       await cloudinary.uploader.add_tags(tags, [publicId]);
     }
     res.json({ success: true });
   } catch (error) {
-    console.error("Update Error:", error);
-    res.status(500).json({ error: "Failed to update tags" });
+    res.status(500).json({ error: "Update failed" });
   }
 });
 
-app.delete('/images/:id', async (req, res) => {
+// מחיקה - משתמש ב-Query Parameter במקום בנתיב מורכב
+app.delete('/delete-image', async (req, res) => {
   try {
-    await cloudinary.uploader.destroy(req.params.id);
+    const { id } = req.query;
+    await cloudinary.uploader.destroy(id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Delete failed" });
@@ -91,4 +85,4 @@ app.delete('/images/:id', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
