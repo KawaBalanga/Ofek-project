@@ -54,6 +54,14 @@ app.delete('/images/:id', (req, res) => {
 
 // חשוב מאוד עבור Render והעולם החיצון
 const PORT = process.env.PORT || 3000;
+// הגדרה שמאפשרת לשרת לגשת לקבצים שנמצאים בתיקייה שלו
+app.use(express.static(__dirname));
+
+// פונקציה שאומרת לשרת: כשמישהו נכנס לכתובת הראשית, תביא לו את ה-HTML
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
