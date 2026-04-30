@@ -10,17 +10,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// הגדרות ענן
 cloudinary.config({
   cloud_name: process.env.YOUR_CLOUD_NAME,
   api_key: process.env.YOUR_API_KEY,
   api_secret: process.env.YOUR_API_SECRET
 });
 
+// הגדרת אחסון - מחברת בין הקובץ לנתונים (תגיות ושם) ברגע ההעלאה
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     const tags = req.body.tags ? req.body.tags.split(',') : [];
-    // אם המשתמש לא הזין שם, נשמור כ-Unnamed
     const title = req.body.title && req.body.title.trim() !== "" ? req.body.title : "Unnamed";
 
     return {
@@ -38,6 +39,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// שליפת התמונות מהענן
 app.get('/images', async (req, res) => {
   try {
     const result = await cloudinary.api.resources({
@@ -61,10 +63,30 @@ app.get('/images', async (req, res) => {
   }
 });
 
+// העלאת תמונה חדשה
 app.post('/upload', upload.single('image'), (req, res) => {
   res.json({ success: true });
 });
 
+// עדכון תגיות לתמונה קיימת
+app.put('/images/:id/tags', async (req, res) => {
+  try {
+    const publicId = req.params.id;
+    const { tags } = req.body;
+
+    // ניקוי תגיות ישנות והוספת חדשות
+    await cloudinary.uploader.remove_all_tags([publicId]);
+    if (tags && tags.length > 0) {
+      await cloudinary.uploader.add_tags(tags, [publicId]);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update tags" });
+  }
+});
+
+// מחיקת תמונה
 app.delete('/images/:id', async (req, res) => {
   try {
     await cloudinary.uploader.destroy(req.params.id);
